@@ -1,0 +1,25 @@
+#!/bin/bash
+
+user=`whoami`
+while getopts "u:" arg
+do
+    case $arg in 
+        u)
+            user=$OPTARG;;
+    esac
+done
+qsFile=".duqs_${user}"
+
+qsFiles=`find . -name ${qsFile}`
+
+me=`whoami`
+for qsf in ${qsFiles[@]}
+do
+    qsd=`dirname $qsf`
+    userT=`stat -c %U $qsd`
+    if [ -w $qsd ]; then
+        rm -f $qsf
+    else
+        ssh $userT@localhost "rm -f ${PWD}/$qsf"
+    fi
+done

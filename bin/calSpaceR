@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# version 4.2.1 @2021-06-22
+
+cmdDir=`dirname $(readlink -f $0)`
+
+source sizeSum.sh
+source libQS.sh
+
+
+workDir=${PWD}
+echo workDir is $workDir
+homePa=`dirname ~`
+if [ ! -w $workDir ]; then
+    tempFile=~/.duqs_temp
+else
+    tempFile=$workDir/.duqs_temp
+fi
+
+
+user=`whoami`
+fastFlag=0
+debug_mode=0
+while getopts "u:fd" arg
+do
+    case $arg in 
+        u)
+            user=$OPTARG;;
+        f)
+            fastFlag=1;;
+        d)
+            debug_mode=1;;
+    esac
+done
+qsFile=".duqs_${user}"
+# echo qsFile=$qsFile
+
+
+if [[ $fastFlag == 0 ]]; then
+
+    dirs=(`find . -depth -type d`)
+
+    for d in ${dirs[@]}
+    do
+        # cd $workDir
+        # echo d=$d, curDir=${PWD}, workDir=$workDir
+        if [[ -r $d && -x $d ]]; then
+            echo "handling $d"
+            cd $d
+            if [[ $debug_mode == 1 ]]; then
+                gen_diskuse_map
+            else
+                gen_diskuse_map >& /dev/null
+            fi
+            cd $workDir
+        else
+            echo "have not rx authority for $d"
+        fi
+    done
+else
+    if [ ! -e ${qsFile} ]; then
+        echo "Error! update mode need prior results of calSpaceR"
+        exit 1
+    fi
+    declare -A modified_qsfs
+    dirs=(`find . -depth -type d -cnewer ${qsFile}`)
+    for d in ${dirs[@]}
+    do
+        if [[ -r $d && -x $d ]]; then
+            echo handling $d
+            if [[ $debug_mode == 1 ]]; then
+                update_diskuse_map $d
+            else
+                update_diskuse_map $d >& /dev/null
+            fi
+        fi
+    done
+fi
+
+rm -f $tempFile

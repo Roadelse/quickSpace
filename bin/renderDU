@@ -1,0 +1,42 @@
+#!/bin/bash
+
+declare -A dum
+
+
+user=`whoami`
+newFlag=1
+allFlag=0
+while getopts "u:na" arg
+do
+    case $arg in 
+        u)
+            user=$OPTARG;;
+        n)
+            newFlag=2;;
+        a) 
+            allFlag=1;;
+    esac
+done
+qsFile=".duqs_${user}"
+
+if [[ $newFlag == 2 && $allFlag == 1 ]]; then
+    echo "-a and -n are conflict!"
+    exit 1
+fi
+
+if [[ $newFlag == 1 || $newFlag == 2 ]]; then
+    strT=`sed -n '2p' $qsFile`
+    eval "dum=$strT"
+    date=`sed -n '1p' $qsFile`
+    echo '>>>>> '$date
+    for i in  ${!dum[@]}
+    do 
+        if [ -d $i ]; then 
+            echo -e "${dum[$i]}\t$i/"
+        else 
+            echo -e "${dum[$i]}\t$i"
+        fi
+    done | sort -hr
+else
+    echo currently only support showing new diskuse result
+fi
